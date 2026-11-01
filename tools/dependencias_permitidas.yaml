@@ -1,0 +1,66 @@
+# Dependencias que puede usar una entrega.
+#
+# La computadora de la organización donde corre tu software se prepara una sola vez, antes del evento,
+# con esta lista: no se instala nada por equipo. El CI usa la misma lista,
+# así lo que da verde en tu PR también anda en el robot.
+#
+# `tools/verificar_dependencias.py` compara contra esto lo que declarás en `package.xml` (claves de
+# rosdep) y en `requirements.txt` (paquetes de pip). Se aceptan:
+#   - los paquetes de ROS 2 Humble de `tools/ros_humble_permitidos.txt` (todo `ros-humble-desktop`,
+#     Nav2, slam_toolbox, robot_localization y tf_transformations);
+#   - los patrones y las claves de `ros:` (más abajo);
+#   - los paquetes que están en tu propio `src/` (por ejemplo, un `equipo_msgs` con tus mensajes).
+# Si necesitás algo que no está, pedilo en Discussions hasta el lunes 2 de noviembre a las 23:59 (el cierre es el martes 3, 9:00) y,
+# si se acepta, se suma acá para todos.
+
+# Claves de rosdep, con patrones `*`. Cubren variantes que no están en la lista de arriba.
+ros:
+  - ament_*
+  - rclcpp*
+  - rclpy*
+  - rosidl_*
+  - tf2*
+  - image_*
+  - nav2_*
+  - navigation2
+  - slam_toolbox
+  - robot_localization
+  - tf_transformations
+  - message_filters
+  - laser_geometry
+  - cv_bridge
+  - python3-numpy
+  - python3-opencv
+  - python3-scipy
+  - python3-matplotlib
+  - python3-yaml
+  - python3-pytest
+  - python3-sklearn
+  - python3-skimage
+  - python3-pandas
+  - python3-networkx
+  - python3-transforms3d
+
+# Paquetes de pip (nombre, sin versión). Vacío a propósito: casi todo lo útil ya viene como clave de
+# rosdep (numpy, OpenCV, scipy, scikit-learn...). Lo pesado (por ejemplo `torch`) se habla aparte.
+pip: []
+
+# Lo que se instala, una sola vez, en la computadora de la organización (paquetes de apt).
+instalar:
+  - ros-humble-desktop
+  - ros-humble-navigation2
+  - ros-humble-nav2-bringup
+  - ros-humble-slam-toolbox
+  - ros-humble-robot-localization
+  - ros-humble-tf-transformations
+  - python3-numpy
+  - python3-opencv
+  - python3-scipy
+  - python3-matplotlib
+  - python3-yaml
+  - python3-pytest
+  - python3-sklearn
+  - python3-skimage
+  - python3-pandas
+  - python3-networkx
+  - python3-transforms3d

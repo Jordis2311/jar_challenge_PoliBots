@@ -39,6 +39,8 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             python3-colcon-common-extensions python3-rosdep python3-yaml python3-pytest
+          # Lo que no está en la lista permitida no se instala (tools/dependencias_permitidas.yaml).
+          python3 tools/verificar_dependencias.py
           rosdep update --rosdistro humble
           rosdep install --from-paths src --ignore-src -y --rosdistro humble
           if [ -s requirements.txt ] && grep -qvE '^\s*(#|$)' requirements.txt; then
@@ -71,31 +73,59 @@ jobs:
             build/verificacion/**
             log/**
 
-  imagen:
-    name: Imagen Docker sin internet
+  sin-red:
+    name: El launch arranca sin red
+    # En la computadora de la organización no hay internet durante la corrida. Acá se instala y se
+    # compila con red, y después el launch corre en una red aislada (solo loopback): tiene que seguir
+    # vivo esperando /map. Si el software intenta bajar algo al arrancar, se cae.
     runs-on: ubuntu-22.04
-    timeout-minutes: 20
+    timeout-minutes: 15
+    container:
+      image: ros:humble-ros-base-jammy@sha256:860e53793ccf575e5369b5e9a19939de2bfcfb46a299954d06f54f2af54fed19
+      # Crear la red aislada (unshare -n) necesita CAP_SYS_ADMIN, y levantar su loopback, CAP_NET_ADMIN.
+      options: --cap-add SYS_ADMIN --cap-add NET_ADMIN
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Construir la imagen
-        run: docker build -t equipo-jar .
+      - name: Dependencias y compilación (con red)
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            python3-colcon-common-extensions python3-rosdep python3-yaml iproute2
+          python3 tools/verificar_dependencias.py
+          rosdep update --rosdistro humble
+          rosdep install --from-paths src --ignore-src -y --rosdistro humble
+          if [ -s requirements.txt ] && grep -qvE '^\s*(#|$)' requirements.txt; then
+            apt-get install -y --no-install-recommends python3-pip
+            pip3 install -r requirements.txt
+          fi
+          source /opt/ros/humble/setup.bash
+          colcon build --base-paths src
 
       - name: El launch arranca y se queda esperando sin red
+        shell: bash
         run: |
-          # --network none: sin internet. Tiene que seguir vivo a los 25 s,
-          # esperando /map. Si el software intenta bajar algo, se cae.
-          docker run --rm -d --network none --name equipo equipo-jar
-          sleep 25
-          if [ "$(docker inspect -f '{{.State.Running}}' equipo)" != "true" ]; then
-            docker logs equipo
-            echo "::error::el launch terminó antes de tiempo sin red"
-            exit 1
-          fi
-          docker logs equipo | tail -20
-          docker stop equipo
+          source /opt/ros/humble/setup.bash
+          source install/setup.bash
+          export ROS_LOCALHOST_ONLY=1
+          unshare -n bash -c '
+            ip link set lo up || { echo "::error::no pude levantar el loopback de la red aislada"; exit 1; }
+            if python3 -c "import urllib.request; urllib.request.urlopen(\"https://github.com\", timeout=3)" 2> /dev/null; then
+              echo "::error::la red no quedó aislada: la prueba no vale"; exit 1
+            fi
+            # timeout termina con 124 si el launch seguía vivo a los 25 s (lo esperado), o con 137 si
+            # además ignoró el INT y hubo que matarlo a los 10 s más (-k).
+            timeout --signal=INT -k 10 25 ros2 launch equipo_jar competencia.launch.py use_sim_time:=false \
+              > launch_sin_red.log 2>&1
+            rc=$?
+            tail -20 launch_sin_red.log
+            if [ "$rc" -ne 124 ] && [ "$rc" -ne 137 ]; then
+              echo "::error::el launch terminó antes de tiempo sin red (código $rc)"; exit 1
+            fi
+          '
 
   simulador:
     # Corrida completa con el juez con puntaje en mundos de práctica (§9.2:
@@ -138,6 +168,9 @@ jobs:
             ignition-fortress libgl1-mesa-dri mesa-utils xauth xvfb \
             python3-colcon-common-extensions python3-rosdep python3-yaml python3-matplotlib \
             ros-humble-gz-ros2-control ros-humble-ros-gz
+          # Lo que no está en la lista permitida no se instala.
+          python3 entrega/tools/verificar_dependencias.py \
+            --src entrega/src --requirements entrega/requirements.txt
           rosdep update --rosdistro humble
           rosdep install --from-paths simulador entrega/src --ignore-src -y --rosdistro humble
 

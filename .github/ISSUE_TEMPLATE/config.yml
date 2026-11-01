@@ -1,0 +1,9 @@
+# Las preguntas sobre el desafío van a Discussions, así le sirven a todos los equipos.
+blank_issues_enabled: true
+contact_links:
+  - name: Preguntas sobre el desafío
+    url: https://github.com/AIRclub-UdeSA/jar_challenge/discussions
+    about: Dudas del reglamento, del simulador o del CI. Las respuestas quedan para todos los equipos.
+  - name: Contacto de la organización
+    url: mailto:airclub@udesa.edu.ar
+    about: Para algo que no sea público.

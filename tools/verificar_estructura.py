@@ -2,7 +2,7 @@
 """Chequea la estructura mínima de la entrega (§9.1).
 
 Errores (rompen el CI):
-- falta el launch oficial, la carpeta params/ o el Dockerfile;
+- falta el launch oficial, la carpeta params/ o equipo.yaml;
 - equipo.yaml sin completar (solo se exige en la entrega, no en el template);
 - archivos que delatan información del mapa (mapas, mundos de Gazebo);
 - archivos demasiado grandes.
@@ -25,7 +25,6 @@ OBLIGATORIOS = [
     PAQUETE / 'launch' / 'competencia.launch.py',
     PAQUETE / 'params',
     PAQUETE / 'package.xml',
-    RAIZ / 'Dockerfile',
     RAIZ / 'equipo.yaml',
 ]
 LIMITE_MB = 50
