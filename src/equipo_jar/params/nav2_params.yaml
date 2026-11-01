@@ -38,6 +38,7 @@ amcl:
     alpha5: 0.2 # ruido de traslación lateral (solo con modelo omni)
 
     # Frame del robot — mismo base_footprint que usaste en semana 06.
+    # base_frame_id: "base_link"
     base_frame_id: "base_footprint"
 
     # Beam skipping: un mecanismo opcional para que AMCL ignore, rayo por
@@ -140,7 +141,7 @@ amcl:
     # Cuánto "en el futuro" extiende AMCL la validez de la transformada
     # que publica, para que otros nodos (RViz, y más adelante los
     # costmaps) no se quejen si les llega un toque tarde.
-    transform_tolerance: 1.0
+    transform_tolerance: 5.0
 
     # Cuánto tiene que rotar (rad) / trasladarse (m) el robot antes de que
     # AMCL dispare una corrección nueva — evita recalcular en cada scan
@@ -159,13 +160,17 @@ amcl:
 
     # Tópico del lidar — igual que en todas las semanas anteriores.
     scan_topic: scan
+    # Topico del mapa
+    # map_topic: map
+    map: map
 
-# map_server:
-#   ros__parameters:
-#     use_sim_time: True
-#     # Se sobreescribe con el argumento `map` del launch (ver
-#     # launch/nav2_semana09.launch.py) — por eso queda vacío acá.
-#     yaml_filename: ""
+
+map_server:
+  ros__parameters:
+    use_sim_time: True
+    # Se sobreescribe con el argumento `map` del launch (ver
+    # launch/nav2_semana09.launch.py) — por eso queda vacío acá.
+    yaml_filename: ""
 
 # ---------------------------------------------------------------------------
 # Checkpoint 2 — costmap global + local. Mismo problema que semana 03

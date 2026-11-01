@@ -3,9 +3,13 @@
 import time
 
 from action_msgs.msg import GoalStatus
-from geometry_msgs.msg import Pose, PoseStamped
+from geometry_msgs.msg import Pose, PoseStamped, PoseWithCovarianceStamped
 from lifecycle_msgs.srv import GetState
 from nav2_msgs.action import NavigateThroughPoses, NavigateToPose
+from launch.actions import RegisterEventHandler
+from launch.event_handlers import OnProcessStart
+
+
 
 import rclpy
 
@@ -21,9 +25,10 @@ class CoberturaMapa(Node):
         self.last_goal = None
         self.feedback = None
 
+        # ros2 lifecycle set /amcl activate
         self.nav_to_pose_client = ActionClient(self, NavigateToPose, 'navigate_to_pose')
-        self.initial_pose_pub = self.create_publisher(PoseStamped,
-                                                      'initialpose',
+        self.initial_pose_pub = self.create_publisher(PoseWithCovarianceStamped,
+                                                      '/initialpose',
                                                       10)
 
         self.possible_goals = []
@@ -88,7 +93,10 @@ class CoberturaMapa(Node):
         self._setInitialPose()
 
     def _setInitialPose(self):
-        msg = self.create_pose_stamped(self.initial_pose)
+        msg = PoseWithCovarianceStamped()
+        msg.header.frame_id = 'map'
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.pose.pose = self.initial_pose        
         # self.info('Publishing Initial Pose')
         self.get_logger().info(f"Initial Pose: {self.initial_pose}")
         self.initial_pose_pub.publish(msg)

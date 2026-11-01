@@ -24,6 +24,8 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
+from launch.actions import RegisterEventHandler
+from launch.event_handlers import OnProcessStart
 
 def generate_launch_description():
     params = os.path.join(
@@ -67,7 +69,7 @@ def generate_launch_description():
     declarar_distancia = DeclareLaunchArgument(
         'distancia_minima_valida', default_value='0.25',
         description='Rango mínimo (m) válido, para filtrar el rebote contra el propio robot.')
-    declarar_autostart = DeclareLaunchArgument('autostart', default_value='true')
+    declarar_autostart = DeclareLaunchArgument('autostart', default_value='false')
 
 
     use_sim_time = LaunchConfiguration('use_sim_time')
@@ -87,18 +89,6 @@ def generate_launch_description():
             'cantidad_victimas': ParameterValue(victimas, value_type=int),
         }],
     )
-
-
-    # navegacion_nav2 = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource(
-    #         os.path.join(pkg_nav2_bringup, 'launch', 'navigation_launch.py')
-    #     ),
-    #     launch_arguments={
-    #         'params_file': nav2_params,
-    #         'use_sim_time': use_sim_time,
-    #         'autostart': autostart,
-    #     }.items(),
-    # )
 
     detector = Node(
         package='deteccion_color',
@@ -138,7 +128,14 @@ def generate_launch_description():
         }],
     )
 
-    lifecycle_nodes = []
+
+    lifecycle_nodes = [
+        'amcl',
+        'controller_server',
+        'planner_server',
+        'bt_navigator',
+        'behavior_server'
+    ]
 
     # Controller
     controller = Node(
@@ -151,7 +148,7 @@ def generate_launch_description():
             nav2_params,
         ],
     )
-    lifecycle_nodes.append('controller_server')
+    # lifecycle_nodes.append('controller_server')
 
     # Planner
     planner = Node(
@@ -160,11 +157,11 @@ def generate_launch_description():
         name='planner_server',
         output='log',
         parameters=[
-            {'use_sim_time': True},
+            {'use_sim_time': use_sim_time},
             nav2_params,
         ]
     )
-    lifecycle_nodes.append('planner_server')
+    # lifecycle_nodes.append('planner_server')
 
     # Behavior
     behavior = Node(
@@ -173,11 +170,11 @@ def generate_launch_description():
         name='behavior_server',
         output='screen',
         parameters=[
-            {'use_sim_time': True},
+            {'use_sim_time': use_sim_time},
             nav2_params,
         ]
     )
-    lifecycle_nodes.append('behavior_server')
+    # lifecycle_nodes.append('behavior_server')
 
     navigator = Node(
         package='nav2_bt_navigator',
@@ -185,32 +182,35 @@ def generate_launch_description():
         name='bt_navigator',
         output='screen',
         parameters=[
-            {'use_sim_time': True},
+            {'use_sim_time': use_sim_time},
             nav2_params,
         ]
     )
-    lifecycle_nodes.append('bt_navigator')
+    # lifecycle_nodes.append('bt_navigator')
 
     amcl = Node(
         package='nav2_amcl', 
         executable='amcl', 
         output='screen',
-        parameters=[{
-            'params_file': nav2_params, 
-            'use_sim_time': use_sim_time
-        }]
+        parameters=[
+            nav2_params, 
+            {'use_sim_time': use_sim_time}
+        ]
     )
-    lifecycle_nodes.append('amcl')
+    # lifecycle_nodes.append('amcl')
 
     lifecycle = Node(
         package='nav2_lifecycle_manager', 
         executable='lifecycle_manager',
+        name='lifecycle_manager_navigation',
+        output='screen',
         parameters=[{
             'use_sim_time': use_sim_time, 
             'autostart': autostart, 
             'node_names': lifecycle_nodes
         }]
     )
+
 
     return LaunchDescription([
         declarar_sim,
@@ -226,9 +226,9 @@ def generate_launch_description():
         detector_scan,
         detector_obstaculos,
         controller,
+        amcl,
         planner,
         behavior,
         navigator,
-        amcl,
-        lifecycle,
+        lifecycle
     ])
